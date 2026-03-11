@@ -12,3 +12,7 @@ if input_string:
     quadratische_Formel = parse_quadratic(input_string)
     result = Mitternachtsformel(quadratische_Formel)
     st.write("Das Ergebnis ist:", result)
+
+# --- NEW CODE to display the history table ---
+if "data_df" in st.session_state:
+    st.dataframe(st.session_state['data_df'])

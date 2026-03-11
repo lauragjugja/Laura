@@ -1,5 +1,9 @@
+import streamlit as st
 import re
-def Mitternachtsformel (quadratische_Formel):
+from datetime import datetime
+import pytz
+
+def Mitternachtsformel(quadratische_Formel):
     a = quadratische_Formel[0]
     b = quadratische_Formel[1]
     c = quadratische_Formel[2]
@@ -7,34 +11,74 @@ def Mitternachtsformel (quadratische_Formel):
     d = b**2 - 4*a*c
 
     if d < 0:
-        return "Keine reellen Lösungen"
+        return None, None, "Keine reellen Lösungen"
     elif d == 0:
         x = -b / (2*a)
-        return f"Eine doppelte Lösung: x = {x}"
+        return x, x, "Eine doppelte Lösung"
     else:
         x1 = (-b + d**0.5) / (2*a)
         x2 = (-b - d**0.5) / (2*a)
-        return f"Zwei Lösungen: x1 = {x1}, x2 = {x2}"
-    
+        return x1, x2, "Zwei Lösungen"
+
+
 def parse_quadratic(s):
-    """Parst Eingaben wie '2x^2+3x-5', 'x^2-x+1' oder ' -x^2 +4x - 4' -> [a, b, c]"""
+    """Parst Eingaben wie '2x^2+3x-5', 'x^2-x+1' oder '-x^2+4x-4' -> [a,b,c]"""
     s = s.replace('−', '-').replace(' ', '')
+
     def to_num(t):
         if t in ('', '+'):
             return 1.0
         if t == '-':
             return -1.0
         return float(t)
+
     m_a = re.search(r'([+-]?\d*\.?\d*)x\^2', s, re.IGNORECASE)
     a = to_num(m_a.group(1)) if m_a else 0.0
+
     m_b = re.search(r'([+-]?\d*\.?\d*)x(?!\^)', s, re.IGNORECASE)
     b = to_num(m_b.group(1)) if m_b else 0.0
+
     s_rest = re.sub(r'([+-]?\d*\.?\d*)x\^2', '', s, flags=re.IGNORECASE)
     s_rest = re.sub(r'([+-]?\d*\.?\d*)x(?!\^)', '', s_rest, flags=re.IGNORECASE)
+
     if s_rest == '':
         c = 0.0
     else:
         nums = re.findall(r'[+-]?\d*\.?\d+', s_rest)
         c = sum(float(n) for n in nums) if nums else 0.0
+
     return [a, b, c]
-# ...existing code...
+
+
+# -------- Streamlit App --------
+
+st.title("Mitternachtsformel Rechner")
+
+eingabe = st.text_input("Quadratische Formel eingeben (z.B. 2x^2+3x-5)")
+
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+if st.button("Berechnen"):
+
+    quadratische_Formel = parse_quadratic(eingabe)
+
+    x1, x2, text = Mitternachtsformel(quadratische_Formel)
+
+    result = {
+        "timestamp": datetime.now(pytz.timezone('Europe/Zurich')),
+        "quadratische_Formel": quadratische_Formel,
+        "Nullstelle1": x1,
+        "Nullstelle2": x2,
+        "Mitternachtsformel": text
+    }
+
+    st.session_state.history.append(result)
+
+    st.write(result)
+
+
+st.subheader("Berechnungsverlauf")
+
+for r in st.session_state.history:
+    st.write(r)
